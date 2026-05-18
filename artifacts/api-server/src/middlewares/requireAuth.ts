@@ -7,22 +7,14 @@ declare module "express-session" {
   }
 }
 
-export function requireAuth(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.memberId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   next();
 }
 
-export function requireAdmin(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.memberId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -36,7 +28,7 @@ export function requireCourseAdmin(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
+) {
   if (!req.session?.memberId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
