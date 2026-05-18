@@ -7,19 +7,33 @@ import { requireAdmin } from "../middlewares/requireAuth";
 
 const router = Router();
 
+// 輔助函數：安全處理 params（解決 string | string[] 問題）
+const getParam = (param: string | string[] | undefined): string => {
+  if (Array.isArray(param)) return param[0] || "";
+  return param || "";
+};
+
 router.get("/", requireAdmin, async (_req: Request, res: Response) => {
   try {
-    const members = await db.select({
-      id: membersTable.id,
-      name: membersTable.name,
-      email: membersTable.email,
-      phone: membersTable.phone,
-      role: membersTable.role,
-      status: membersTable.status,
-      joinedAt: membersTable.joinedAt,
-    }).from(membersTable).orderBy(membersTable.joinedAt);
+    const members = await db
+      .select({
+        id: membersTable.id,
+        name: membersTable.name,
+        email: membersTable.email,
+        phone: membersTable.phone,
+        role: membersTable.role,
+        status: membersTable.status,
+        joinedAt: membersTable.joinedAt,
+      })
+      .from(membersTable)
+      .orderBy(membersTable.joinedAt);
 
-    return res.json(members.map(m => ({ ...m, joinedAt: m.joinedAt.toISOString() })));
+    return res.json(
+      members.map((m) => ({
+        ...m,
+        joinedAt: m.joinedAt.toISOString(),
+      })),
+    );
   } catch (err) {
     return res.status(500).json({ error: "Internal server error" });
   }
@@ -29,23 +43,32 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { name, email, password, phone, role } = req.body;
     if (!name || !email || !password) {
-      return res.status(400).json({ error: "Name, email and password are required" });
+      return res
+        .status(400)
+        .json({ error: "Name, email and password are required" });
     }
 
-    const existing = await db.select().from(membersTable).where(eq(membersTable.email, email)).limit(1);
+    const existing = await db
+      .select()
+      .from(membersTable)
+      .where(eq(membersTable.email, email))
+      .limit(1);
     if (existing.length > 0) {
       return res.status(400).json({ error: "Email already exists" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const [member] = await db.insert(membersTable).values({
-      name,
-      email,
-      passwordHash,
-      phone: phone || null,
-      role: role || "member",
-      status: "active",
-    }).returning();
+    const [member] = await db
+      .insert(membersTable)
+      .values({
+        name,
+        email,
+        passwordHash,
+        phone: phone || null,
+        role: role || "member",
+        status: "active",
+      })
+      .returning();
 
     return res.status(201).json({
       id: member.id,
@@ -63,16 +86,22 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
 
 router.get("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const [member] = await db.select({
-      id: membersTable.id,
-      name: membersTable.name,
-      email: membersTable.email,
-      phone: membersTable.phone,
-      role: membersTable.role,
-      status: membersTable.status,
-      joinedAt: membersTable.joinedAt,
-    }).from(membersTable).where(eq(membersTable.id, id)).limit(1);
+    const id = parseInt(getParam(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+    const [member] = await db
+      .select({
+        id: membersTable.id,
+        name: membersTable.name,
+        email: membersTable.email,
+        phone: membersTable.phone,
+        role: membersTable.role,
+        status: membersTable.status,
+        joinedAt: membersTable.joinedAt,
+      })
+      .from(membersTable)
+      .where(eq(membersTable.id, id))
+      .limit(1);
 
     if (!member) return res.status(404).json({ error: "Member not found" });
 
@@ -84,9 +113,10 @@ router.get("/:id", requireAdmin, async (req: Request, res: Response) => {
 
 router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const { name, email, phone, role, password } = req.body;
+    const id = parseInt(getParam(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
+    const { name, email, phone, role, password } = req.body;
     if (!name || !email) {
       return res.status(400).json({ error: "Name and email are required" });
     }
@@ -94,9 +124,15 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid role" });
     }
 
-    const existing = await db.select().from(membersTable).where(eq(membersTable.email, email)).limit(1);
+    const existing = await db
+      .select()
+      .from(membersTable)
+      .where(eq(membersTable.email, email))
+      .limit(1);
     if (existing.length > 0 && existing[0].id !== id) {
-      return res.status(400).json({ error: "Email already in use by another account" });
+      return res
+        .status(400)
+        .json({ error: "Email already in use by another account" });
     }
 
     const updateData: Record<string, any> = {
@@ -105,6 +141,7 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
       phone: phone || null,
       ...(role && { role }),
     };
+
     if (password && password.length >= 6) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
     }
@@ -133,11 +170,14 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
 
 router.patch("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const { status } = req.body;
+    const id = parseInt(getParam(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
+    const { status } = req.body;
     if (!status || !["active", "inactive"].includes(status)) {
-      return res.status(400).json({ error: "status must be 'active' or 'inactive'" });
+      return res
+        .status(400)
+        .json({ error: "status must be 'active' or 'inactive'" });
     }
 
     const [updated] = await db
@@ -164,9 +204,15 @@ router.patch("/:id", requireAdmin, async (req: Request, res: Response) => {
 
 router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const [deleted] = await db.delete(membersTable).where(eq(membersTable.id, id)).returning();
+    const id = parseInt(getParam(req.params.id));
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+    const [deleted] = await db
+      .delete(membersTable)
+      .where(eq(membersTable.id, id))
+      .returning();
     if (!deleted) return res.status(404).json({ error: "Member not found" });
+
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: "Internal server error" });
