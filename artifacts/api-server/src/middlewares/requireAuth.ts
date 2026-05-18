@@ -7,14 +7,22 @@ declare module "express-session" {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   if (!req.session?.memberId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   next();
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export function requireAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   if (!req.session?.memberId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -24,11 +32,18 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-export function requireCourseAdmin(req: Request, res: Response, next: NextFunction) {
+export function requireCourseAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   if (!req.session?.memberId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  if (req.session.memberRole !== "admin" && req.session.memberRole !== "course_admin") {
+  if (
+    req.session.memberRole !== "admin" &&
+    req.session.memberRole !== "course_admin"
+  ) {
     return res.status(403).json({ error: "Forbidden" });
   }
   next();
