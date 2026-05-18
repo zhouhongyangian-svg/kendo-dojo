@@ -3,7 +3,14 @@ import cors from "cors";
 // @ts-ignore
 import pinoHttp from "pino-http";
 import session from "express-session";
-import router from "./routes";
+
+import membersRouter from "./routes/members";
+import announcementsRouter from "./routes/announcements";
+import coursesRouter from "./routes/courses";
+import courseLevelsRouter from "./routes/course-levels";
+import bookingsRouter from "./routes/bookings";
+// 如果還有其他 routes，請繼續加入
+
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -51,6 +58,12 @@ app.use(
   }),
 );
 
-app.use("/api", router);
+// 正確註冊所有 routes
+app.use("/api", membersRouter); // 如果 members 是根路由
+app.use("/api/announcements", announcementsRouter);
+app.use("/api/courses", coursesRouter);
+app.use("/api/course-levels", courseLevelsRouter);
+app.use("/api/bookings", bookingsRouter);
+// 如果還有其他路由，請繼續加入
 
 export default app;
