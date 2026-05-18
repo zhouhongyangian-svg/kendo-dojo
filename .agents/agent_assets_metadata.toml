@@ -1,0 +1,13 @@
+uploads = []
+
+[[generated]]
+id = "MpKKqVwsyYUKDNI7QGrHf"
+uri = "file://artifacts/kendo-dojo/public/kendo-hero.png"
+type = "image"
+title = "Dramatic Kendo Dojo Hero"
+
+[[outputs]]
+id = "oS5OTrIjltDEESyCpMYtP"
+uri = "file://kendo-dojo-source.tar.gz"
+type = "unspecified"
+title = "长安剑士会 — 项目源码包"
